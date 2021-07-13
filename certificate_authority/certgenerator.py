@@ -25,8 +25,9 @@ if __name__ == '__main__':
         f.write(key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.TraditionalOpenSSL,
-            encryption_algorithm=serialization.BestAvailableEncryption(
-                b"THE_RSA_PASS"),
+            encryption_algorithm=serialization.NoEncryption(),
+            #encryption_algorithm=serialization.BestAvailableEncryption(
+            #    b"THE_CA_PASS"),
         ))
 
     # Certificate Creation
@@ -40,6 +41,7 @@ if __name__ == '__main__':
         x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"DNS Project Group"),
         x509.NameAttribute(NameOID.COMMON_NAME, u"localhost:5000"),
     ])
+
     cert = (x509.CertificateBuilder()
             .subject_name(subject)
             .issuer_name(issuer)
