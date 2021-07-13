@@ -34,6 +34,7 @@ if __name__ == '__main__':
 
     # Various details about who we are. For a self-signed certificate the
     # subject and issuer are always the same.
+
     subject = issuer = x509.Name([
         x509.NameAttribute(NameOID.COUNTRY_NAME, u"IR"),
         x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"Tehran"),
