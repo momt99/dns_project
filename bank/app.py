@@ -15,9 +15,11 @@ from utils.signing import *
 from certificate_authority.validator import verify_certificate
 from utils.auth import verify_auth_header
 
+import utils.ids
+
 app = Flask(__name__)
 
-my_id = '1349283455'
+my_id = utils.ids.BANK_ID
 
 if not os.path.exists("assets"):
     os.mkdir("assets")

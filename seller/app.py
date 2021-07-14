@@ -1,6 +1,8 @@
 import json
 import os
 import time
+from utils.urls import BANK_URL
+import utils.ids
 import uuid
 from datetime import datetime
 
@@ -14,8 +16,8 @@ from utils.csrgenerator import create_csr
 from certificate_authority.validator import verify_certificate
 from utils.auth import create_auth_header, verify_auth_header
 
-my_id = '134986483465'
-bank_id = "1349283455"
+my_id = utils.ids.SELLER_ID
+bank_id = utils.ids.BANK_ID
 
 app = Flask(__name__)
 
@@ -51,7 +53,7 @@ def buy(customer_id, item_id):
     req = {"validity": validity, "callback": call_back_url, "amount": payment_amount}
     auth_header = create_auth_header(my_id, bank_id, private_key=key)
     headers = {'content-type': 'application/json', "Authorization": auth_header}
-    payment_bank_id = requests.post("http://localhost:6000/payment", json.dumps(req), headers=headers)
+    payment_bank_id = requests.post(f"{BANK_URL}/payment", json.dumps(req), headers=headers)
     customers_paymentid_dict[payment_id][-2] = payment_bank_id
     return payment_bank_id
 
@@ -68,7 +70,7 @@ def validate(payment_id):
         return "Authentication Failed", 401
     customers_paymentid_dict[payment_id][-1] = True
     payment_bank_id = customers_paymentid_dict[payment_id][-2] = True
-    requests.post("https://localhost:6000/transaction/" + str(payment_bank_id) + "/approve")
+    requests.post(f"{BANK_URL}/transaction/" + str(payment_bank_id) + "/approve")
 
 
 
@@ -76,7 +78,7 @@ def create_bank_account():
     sign = my_id + "|" + bank_id
     sign = key.sign(sign)
     data = {"ID": my_id, "certificate": cert.text, "signature": sign}
-    res = requests.post("https://localhost:6000/create", data, verify=False)  # TODO: verify with ca key.
+    res = requests.post(f"{BANK_URL}/create", data, verify=False)  # TODO: verify with ca key.
     assert res.status_code == 201
 
 
