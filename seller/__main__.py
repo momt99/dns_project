@@ -47,7 +47,7 @@ def buy(customer_id, item_id):
         return "Authentication failed.", 401
     payment_amount = items[int(item_id)]
     payment_id = str(uuid.uuid4())
-    call_back_url = "http://localhost:8081/validate_payment/" + payment_id
+    call_back_url = "https://localhost:8081/validate_payment/" + payment_id
     validity = 3600
     customers_paymentid_dict[payment_id] = [
         customer_id, time.time(), validity, payment_amount, None, False]
@@ -67,12 +67,11 @@ def buy(customer_id, item_id):
 @app.route('/validate_payment/<payment_id>', methods=['POST'])
 def validate(payment_id):
     data = request.json
-    bank_cert = x509.load_pem_x509_certificate(data["certificate"])
-    bank_public_key = load_pem_public_key(data["public_key"])
+    bank_cert = x509.load_pem_x509_certificate(from_base64(data["certificate"]))
     try:
         verify_certificate(bank_cert)
         verify_auth_header(request.headers.get(
-            "Authorization"), bank_public_key, my_id)
+            "Authorization"), bank_cert.public_key(), my_id)
     except:
         return "Authentication Failed", 401
     customers_paymentid_dict[payment_id][-1] = True

@@ -91,7 +91,9 @@ def pay(id):
         req.raise_for_status()
         if req.status_code == 201:
             accounts[payments[id]["seller_id"]]['value'] += payments[id]["amount"]
-            requests.get(payments[id]["callback"] + str(id), verify='certificate_authority/assets/certificate.pem')
+            print("I'm callback:", payments[id]["callback"])
+            res = requests.post(payments[id]["callback"] + str(id), verify=False)
+            res.raise_for_status()
             timer = threading.Timer(10.0, check_approve, [id, user_id])
             timer.start()
             return "Payment completed successfully", 201
