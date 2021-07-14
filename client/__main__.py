@@ -37,7 +37,8 @@ def create_bank_account():
     response = requests.post(
         f'{BANK_URL}/create',
         json=data,
-        headers={headers.AUTHORIZATION: create_auth_header(USER_ID, BANK_ID)}
+        headers={headers.AUTHORIZATION: create_auth_header(USER_ID, BANK_ID)},
+        verify=False
     )
     response.raise_for_status()
 

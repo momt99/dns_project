@@ -21,7 +21,7 @@ app = Flask(__name__)
 
 my_id = '1020156016'
 
-obtain_certificate('blockchain/assets', 7000, 'The Seller', None)
+key = obtain_certificate('blockchain/assets', 7000, 'The Seller')
 
 # each account has a 'value', 'password' and an array of policies.
 account = dict({})

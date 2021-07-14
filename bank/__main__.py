@@ -1,6 +1,8 @@
 import os
 import random
 import threading
+
+from utils import headers
 from utils.cert_helper import obtain_certificate
 
 import requests
@@ -21,17 +23,13 @@ from utils.urls import *
 app = Flask(__name__)
 
 my_id = utils.ids.BANK_ID
-KEY_PASS = b"THE_BANK_PASS"
 
-obtain_certificate('blockchain/assets', 6000, 'The Bank', KEY_PASS)
+key = obtain_certificate('bank/assets', 6000, 'The Bank')
 
 accounts = dict({})
 payments = dict({})
 
-with open('assets/key.pem', 'rb') as f:
-    key = load_pem_private_key(f.read(), password=KEY_PASS)
-
-with open('assets/certificate.pem', 'rb') as f:
+with open('bank/assets/cert.pem', 'rb') as f:
     cert = x509.load_pem_x509_certificate(f.read())
 
 
@@ -45,8 +43,8 @@ def check_approve(payment_id, user_id):
 def create():
     try:
         data = request.json
-        certificate = x509.load_pem_x509_certificate(data['certificate'])
-        header = data['header']
+        certificate = x509.load_pem_x509_certificate(from_base64(data['certificate']))
+        header = request.headers[headers.AUTHORIZATION]
         user_id = extract_user_id(header)
         public_key = certificate.public_key()
         try:
@@ -55,7 +53,7 @@ def create():
             return 'Signature Not Match', 450
         if not verify_certificate(certificate):
             return "Invalid Certificate", 451
-        if accounts.__contains__(data[0]):
+        if accounts.__contains__(user_id):
             return "Account already exists", 300
         accounts[user_id] = dict({'value': 0, 'public key': public_key})
         return "Account created successfully", 201

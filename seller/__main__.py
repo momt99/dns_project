@@ -1,7 +1,11 @@
 import json
 import os
 import time
-from utils.cert_helper import obtain_certificate
+
+from utils import headers, auth
+from utils.cert_helper import obtain_certificate, logger
+from utils.encoding import to_base64
+from utils.paths import CA_CERT_PATH
 from utils.urls import BANK_URL
 import utils.ids
 import uuid
@@ -22,13 +26,16 @@ bank_id = utils.ids.BANK_ID
 
 app = Flask(__name__)
 
-obtain_certificate('seller/assets', 8081, 'The Seller', None)
+key = obtain_certificate('seller/assets', 8081, 'The Seller')
+auth.default_private_key = key
+with open('seller/assets/cert.pem', 'rb') as f:
+    cert = x509.load_pem_x509_certificate(f.read())
 
 items = {1: 100, 2: 200, 3: 300, 4: 400, 5: 500}
 customers_paymentid_dict = dict()
 
 
-@app.route('<customer_id>/buy/<item_id>', methods=['POST'])
+@app.route('/<customer_id>/buy/<item_id>', methods=['POST'])
 def buy(customer_id, item_id):
     auth_header = request.headers.get("Authorization")
     data = request.json
@@ -79,6 +86,21 @@ def create_bank_account():
     # TODO: verify with ca key.
     res = requests.post(f"{BANK_URL}/create", data, verify=False)
     assert res.status_code == 201
+
+
+def create_bank_account():
+    data = {
+        'certificate': to_base64(cert.public_bytes(serialization.Encoding.PEM))
+    }
+    response = requests.post(
+        f'{BANK_URL}/create',
+        json=data,
+        headers={headers.AUTHORIZATION: create_auth_header(my_id, bank_id)},
+        verify=False
+    )
+    response.raise_for_status()
+
+    logger.info('Bank account created successfully.')
 
 
 create_bank_account()
