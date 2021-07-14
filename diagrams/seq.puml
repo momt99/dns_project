@@ -1,0 +1,20 @@
+@startuml
+
+participant Client
+participant Seller
+participant Bank
+participant Exchange
+
+Client -> Bank : Create Account
+Seller -> Bank : Create Account
+
+Client -> Seller : Buy Item
+Seller -> Client : Payment Id
+
+Client -> Bank : Pay
+Bank -> Exchange : Exchange
+
+Bank -> Seller : Inform
+Seller -> Bank : Approve
+
+@enduml

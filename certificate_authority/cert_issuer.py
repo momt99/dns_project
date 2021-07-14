@@ -36,6 +36,7 @@ def issue_certificate(csr: CertificateSigningRequest) -> Certificate:
 
 def define_sign_request(csr_data: bytes):
     csr = load_pem_x509_csr(csr_data)
+    assert csr.is_signature_valid
     try:
         common_name = (csr.subject.get_attributes_for_oid(
             OID_COMMON_NAME)[0].value)

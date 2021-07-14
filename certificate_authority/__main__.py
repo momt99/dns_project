@@ -14,23 +14,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ca.db'
 database.db = SQLAlchemy(app)
 
 
-# This method should be removed
-
-@app.route('/sign', methods=['POST'])
-def sign():
-    if not (request.content_type == 'application/octet-stream'
-            or request.content_type == 'text/plain'):
-        return "Bad content type.", 400
-
-    try:
-        from certificate_authority import cert_issuer
-        csr = load_pem_x509_csr(request.data)
-        cert = cert_issuer.issue_certificate(csr)
-        return cert.public_bytes(encoding=serialization.Encoding.PEM), 201
-    except ValueError:
-        return "Bad certificate data.", 400
-
-
 @app.route('/certificate', methods=['POST'])
 def certificate():
     if not (request.content_type == 'application/octet-stream'
@@ -69,27 +52,6 @@ def authenticate(id):
         id, from_base64(message))
 
     return str(cert_bytes, encoding='ascii')
-
-
-@app.route('/box', methods=['POST'])
-def box():
-    body = request.json
-    id = body['id']
-    secret_message = body['message']
-
-    with open("certificate_authority/assets/keytest.pem", "rb") as file:
-        key = serialization.load_pem_private_key(file.read(), None)
-        from utils.signing import get_default_encryption_padding
-        message = key.decrypt(
-            from_base64(secret_message),
-            get_default_encryption_padding())
-        requests.post(
-            f'https://localhost:5000/authenticate/{id}',
-            json={'message': to_base64(message)},
-            verify='certificate_authority/assets/certificate.pem')
-
-    return "Done", 200
-
 
 app.run(ssl_context=(
         'certificate_authority/assets/certificate.pem',
