@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import utils
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
-from certificate_authority.csrgenerator import create_csr
+from utils.csrgenerator import create_csr
 from certificate_authority.validator import verify_certificate
 from utils.auth import verify_auth_header, extract_user_id
 from utils.signing import *
@@ -48,8 +48,9 @@ def permit_transaction(bank_id, amount, account_id):
     from datetime import datetime
     for policy in account[account_id]["policies"]:
         if policy[0] == bank_id:
-            check = datetime.utcfromtimestamp(policy[1][1]) >= datetime.utcnow() >= datetime.utcfromtimestamp(policy[1][0]) \
-                and policy[1][2] >= 0 and policy[1][3] <= amount
+            p: Policy = policy[1]
+            check = datetime.utcfromtimestamp(p.end_time * 1.0) >= datetime.utcnow() >= datetime.utcfromtimestamp(p.start_time * 1.0) \
+                and p.count >= 0 and p.maximum_amount >= amount
             if check:
                 return True
     return False

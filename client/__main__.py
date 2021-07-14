@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+
+from requests.exceptions import HTTPError
 from utils.signing import sign
 from blockchain.models import Policy
 from utils import headers
@@ -6,7 +8,7 @@ from utils.urls import BANK_URL, BC_URL, SELLER_URL
 from utils.ids import BANK_ID, SELLER_ID
 import utils.auth
 from utils.auth import create_auth_header
-from utils.encoding import to_base64
+from utils.encoding import from_base64, to_base64
 import requests
 from client.certificate_manager import load_certificate, load_private_key, load_public_key, obtain_certificate
 import logging
@@ -52,7 +54,8 @@ def buy_item():
         headers={headers.AUTHORIZATION: create_auth_header(USER_ID, SELLER_ID)})
     response.raise_for_status()
 
-    return response.json["payment_id"]
+    data = response.json
+    return data['payment_id'], data['amount']
 
 
 def pay_item(payment_id):
@@ -61,7 +64,12 @@ def pay_item(payment_id):
         f'{BANK_URL}/payment/{payment_id}/pay',
         headers={headers.AUTHORIZATION: create_auth_header(USER_ID, BANK_ID)}
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+        return True, None
+    except HTTPError:
+        if response.status_code == 460:
+            return False, from_base64(str(response.content, 'ascii'))
 
 
 def delegate(amount):
@@ -86,5 +94,8 @@ def delegate(amount):
 
 
 create_bank_account()
-payment_id = buy_item()
-pay_item(payment_id)
+payment_id, amount = buy_item()
+successful, bank_public_key = pay_item(payment_id)
+if not successful:
+    delegate(amount)
+    pay_item(payment_id)
