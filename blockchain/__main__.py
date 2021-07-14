@@ -1,23 +1,20 @@
-from cryptography.x509.base import load_pem_x509_certificate
-from blockchain.models import Policy
+import datetime
 import os
-import time
 
 import requests
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
-from flask import Flask, request
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import utils
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from cryptography.x509.base import load_pem_x509_certificate
+from flask import Flask, request
 
-from utils.csrgenerator import create_csr
+from blockchain.models import Policy
 from certificate_authority.validator import verify_certificate
 from utils.auth import verify_auth_header, extract_user_id
-from utils.signing import *
+from utils.csrgenerator import create_csr
 from utils.encoding import *
-
-import datetime
+from utils.signing import *
 
 app = Flask(__name__)
 
@@ -26,10 +23,10 @@ my_id = '1020156016'
 if not os.path.exists("assets"):
     os.mkdir("assets")
 
-key, csr = create_csr("localhost:7000")
+key, csr = create_csr("localhost:7000", "blockchain")
 
-cert = requests.post('http://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
-                     verify=False, headers={'Content-type': 'application/octet-stream'})
+cert = requests.post('https://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
+                     verify=False, headers={'Content-type': 'text/plain'})
 
 with open('assets/certificate.pem', "w") as f:
     f.write(cert.text)
@@ -110,3 +107,5 @@ def delegate():
         return "Created.", 201
     except ValueError:
         return "Bad create account data", 400
+
+app.run(ssl_context=('assets/certificate.pem', 'assets/key.pem'), port=7000)

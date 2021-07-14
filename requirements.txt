@@ -1,6 +1,7 @@
-cryptography==2.8
+cryptography~=3.4.7
 requests==2.25.0
 flask==2.0.1
+flask_sqlalchemy==2.5.1
 typing~=3.7.4.3
 SQLAlchemy~=1.4.20
 Werkzeug~=2.0.1

@@ -24,8 +24,8 @@ if not os.path.exists("assets"):
 
 key, csr = create_csr("localhost:6000", "The Bank")
 
-cert = requests.post('http://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
-                     verify=False, headers={'Content-type': 'application/octet-stream'})
+cert = requests.post('https://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
+                     verify=False, headers={'Content-type': 'text/plain'})
 
 with open('assets/certificate.pem', "w") as f:
     f.write(cert.text)
