@@ -1,5 +1,8 @@
+from datetime import datetime, timedelta
+from utils.signing import sign
+from blockchain.models import Policy
 from utils import headers
-from utils.urls import BANK_URL, SELLER_URL
+from utils.urls import BANK_URL, BC_URL, SELLER_URL
 from utils.ids import BANK_ID, SELLER_ID
 import utils.auth
 from utils.auth import create_auth_header
@@ -58,6 +61,27 @@ def pay_item(payment_id):
         f'{BANK_URL}/payment/{payment_id}/pay',
         headers={headers.AUTHORIZATION: create_auth_header(USER_ID, BANK_ID)}
     )
+    response.raise_for_status()
+
+
+def delegate(amount):
+    policy = Policy(
+        int(datetime.utcnow().timestamp()),
+        int((datetime.utcnow() + timedelta(hours=1)).timestamp()),
+        2,
+        amount).to_bytes()
+    data = {
+        'certificate': to_base64(cert),
+        'public_key': to_base64(public_key),
+        'user_id': "XXXXXXX",
+        'bank_id': BANK_ID,
+        'policy': to_base64(policy),
+        'signature': sign(private_key, bytes(BANK_ID, encoding='ascii') + policy)
+    }
+
+    response = requests.post(
+        f'{BC_URL}/delegate',
+        json=data)
     response.raise_for_status()
 
 

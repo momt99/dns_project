@@ -1,3 +1,5 @@
+from cryptography.x509.base import load_pem_x509_certificate
+from blockchain.models import Policy
 import os
 import time
 
@@ -47,7 +49,7 @@ def permit_transaction(bank_id, amount, account_id):
     for policy in account[account_id]["policies"]:
         if policy[0] == bank_id:
             check = datetime.utcfromtimestamp(policy[1][1]) >= datetime.utcnow() >= datetime.utcfromtimestamp(policy[1][0]) \
-                    and policy[1][2] >= 0 and policy[1][3] <= amount
+                and policy[1][2] >= 0 and policy[1][3] <= amount
             if check:
                 return True
     return False
@@ -75,7 +77,7 @@ def exchange():
         amount_user_signature = from_base64(data['amount_user_signature'])
         try:
             certificate.public_key().verify(amount_user_signature, digest, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
-                                                                                  salt_length=padding.PSS.MAX_LENGTH),
+                                                                                       salt_length=padding.PSS.MAX_LENGTH),
                                             utils.Prehashed(chosen_hash))
         except InvalidSignature:
             return 'Amount signature Not Match', 452
@@ -94,14 +96,15 @@ def exchange():
 def delegate():
     data = request.json
     try:
-        verify_certificate(data["certificate"])
+        verify_certificate(
+            load_pem_x509_certificate(from_base64(data["certificate"])))
         pub_key = data["public_key"]
         bank_id = data["bank_id"]
         user_id = data["user_id"]
-        policy = data["policy"]
+        policy = Policy.from_bytes(from_base64(data["policy"]))
         sign = data["signature"]
         pub_key = load_pem_public_key(bytes(pub_key, "utf-8"))
-        verify_signature(pub_key, sign, bank_id + "|" + policy)
+        verify_signature(pub_key, sign, bytes(bank_id, 'ascii') + policy)
         account[user_id]["policies"].append((bank_id, policy))
         return "Created.", 201
     except ValueError:
