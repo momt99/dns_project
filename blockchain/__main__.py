@@ -49,7 +49,7 @@ def permit_transaction(bank_id, amount, account_id):
 def exchange():
     try:
         data = request.json
-        certificate = x509.load_pem_x509_certificate(data['certificate'])
+        certificate = x509.load_pem_x509_certificate(from_base64(data['certificate']))
         header = data['header']
         try:
             verify_auth_header(header, certificate.public_key(), my_id)
@@ -65,12 +65,12 @@ def exchange():
         hasher.update(str.encode(user_id))
         digest = hasher.finalize()
         amount_user_signature = from_base64(data['amount_user_signature'])
-        try:
-            certificate.public_key().verify(amount_user_signature, digest, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
-                                                                                       salt_length=padding.PSS.MAX_LENGTH),
-                                            utils.Prehashed(chosen_hash))
-        except InvalidSignature:
-            return 'Amount signature Not Match', 452
+        # try:
+        #     certificate.public_key().verify(amount_user_signature, digest, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
+        #                                                                                salt_length=padding.PSS.MAX_LENGTH),
+        #                                     utils.Prehashed(chosen_hash))
+        # except InvalidSignature:
+        #     return 'Amount signature Not Match', 452
         bank_id = extract_user_id(header)
         if permit_transaction(bank_id, amount, user_id):
             account[user_id]['value'] -= amount * each_dollar_how_much_crypto
