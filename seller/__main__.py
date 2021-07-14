@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from utils.cert_helper import obtain_certificate
 from utils.urls import BANK_URL
 import utils.ids
 import uuid
@@ -21,16 +22,7 @@ bank_id = utils.ids.BANK_ID
 
 app = Flask(__name__)
 
-if not os.path.exists("assets"):
-    os.mkdir("assets")
-
-key, csr = create_csr("localhost:6000", "The Seller")
-
-cert = requests.post('http://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
-                     verify=False, headers={'Content-type': 'application/octet-stream'})
-
-with open('assets/certificate.pem', "w") as f:
-    f.write(cert.text)
+obtain_certificate('seller/assets', 8081, 'The Seller', None)
 
 items = {1: 100, 2: 200, 3: 300, 4: 400, 5: 500}
 customers_paymentid_dict = dict()
@@ -91,4 +83,4 @@ def create_bank_account():
 
 create_bank_account()
 
-app.run(port=8081, ssl_context=('assets/certificate.pem', 'assets/key.pem'))
+app.run(port=8081, ssl_context=('assets/cert.pem', 'assets/key.pem'))

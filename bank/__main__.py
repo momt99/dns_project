@@ -1,6 +1,7 @@
 import os
 import random
 import threading
+from utils.cert_helper import obtain_certificate
 
 import requests
 from cryptography import x509
@@ -19,16 +20,7 @@ app = Flask(__name__)
 
 my_id = utils.ids.BANK_ID
 
-if not os.path.exists("assets"):
-    os.mkdir("assets")
-
-key, csr = create_csr("localhost:6000", "The Bank")
-
-cert = requests.post('https://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
-                     verify=False, headers={'Content-type': 'text/plain'})
-
-with open('assets/certificate.pem', "w") as f:
-    f.write(cert.text)
+obtain_certificate('blockchain/assets', 6000, 'The Bank', None)
 
 accounts = dict({})
 payments = dict({})
@@ -146,4 +138,4 @@ with open('assets/key.pem', "wb") as f:
         encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"),
     ))
 
-app.run(ssl_context=('assets/certificate.pem', 'assets/key.pem'), port=6000)
+app.run(ssl_context=('assets/cert.pem', 'assets/key.pem'), port=6000)

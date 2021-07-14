@@ -1,5 +1,6 @@
 import datetime
 import os
+from utils.cert_helper import obtain_certificate
 
 import requests
 from cryptography import x509
@@ -20,16 +21,7 @@ app = Flask(__name__)
 
 my_id = '1020156016'
 
-if not os.path.exists("assets"):
-    os.mkdir("assets")
-
-key, csr = create_csr("localhost:7000", "blockchain")
-
-cert = requests.post('https://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
-                     verify=False, headers={'Content-type': 'text/plain'})
-
-with open('assets/certificate.pem', "w") as f:
-    f.write(cert.text)
+obtain_certificate('blockchain/assets', 7000, 'The Seller', None)
 
 # each account has a 'value', 'password' and an array of policies.
 account = dict({})
@@ -108,4 +100,4 @@ def delegate():
     except ValueError:
         return "Bad create account data", 400
 
-app.run(ssl_context=('assets/certificate.pem', 'assets/key.pem'), port=7000)
+app.run(ssl_context=('assets/cert.pem', 'assets/key.pem'), port=7000)
