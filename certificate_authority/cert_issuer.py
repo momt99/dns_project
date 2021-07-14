@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives import hashes
 from certificate_authority.database import db
 from certificate_authority.models import *
 from os import urandom
-from utils.signing import get_default_padding, get_default_hash
+from utils.signing import get_default_encryption_padding, get_default_hash
 
 
 def issue_certificate(csr: CertificateSigningRequest) -> Certificate:
@@ -60,7 +60,7 @@ def define_sign_request(csr_data: bytes):
         request.trust_address,
         csr.public_key().encrypt(
             request.secret_message,
-            get_default_padding()))
+            get_default_encryption_padding()))
 
 
 def verify_decrypted_message_and_issue(id: str, message: bytes) -> bytes:

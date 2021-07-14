@@ -79,10 +79,10 @@ def box():
 
     with open("certificate_authority/assets/keytest.pem", "rb") as file:
         key = serialization.load_pem_private_key(file.read(), None)
-        from utils.signing import get_default_padding
+        from utils.signing import get_default_encryption_padding
         message = key.decrypt(
             from_base64(secret_message),
-            get_default_padding())
+            get_default_encryption_padding())
         requests.post(
             f'https://localhost:5000/authenticate/{id}',
             json={'message': to_base64(message)},

@@ -1,5 +1,7 @@
 import datetime
 from typing import Union
+
+from sqlalchemy.sql.functions import user
 from utils.encoding import from_base64, to_base64
 from utils.signing import sign, verify_signature
 
@@ -8,8 +10,17 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 default_private_key: rsa.RSAPrivateKey = None
 
 
-
 __SIGNATURE_LENGTH = 256
+__TIME_LENGTH = 8
+
+
+def __time_to_bytes(timestamp: datetime.datetime):
+    return bytes(int(timestamp.timestamp()).to_bytes(__TIME_LENGTH, 'big'))
+
+
+def __bytes_to_time(time_data: bytes):
+    return datetime.datetime.fromtimestamp(
+        int.from_bytes(time_data, byteorder='big') * 1.0)
 
 
 def create_auth_header(
@@ -25,9 +36,8 @@ def create_auth_header(
 
     assert private_key is not None
 
-    data = (bytes(user_id, 'ascii')
-            + bytes(service_id, 'ascii')
-            + bytes(int(timestamp.timestamp()).to_bytes(8, 'big')))
+    data = (bytes(f'{user_id}||{service_id}', 'ascii')
+            + __time_to_bytes(timestamp))
     signature = sign(private_key, data)
 
     assert len(signature) == __SIGNATURE_LENGTH
@@ -35,9 +45,21 @@ def create_auth_header(
     return to_base64(data + signature)
 
 
-def verify_auth_header(value: str, public_key: rsa.RSAPublicKey):
-    value = from_base64(value)
+def verify_and_extract_auth_header(
+        header_value: str, public_key: rsa.RSAPublicKey, current_service_id: str):
+    value = from_base64(header_value)
     data = value[:-__SIGNATURE_LENGTH]
     signature = value[-__SIGNATURE_LENGTH:]
 
+    time_data = data[-__TIME_LENGTH:]
+    timestamp = __bytes_to_time(time_data)
+    assert datetime.datetime.utcnow() - timestamp < datetime.timedelta(minutes=1)
+
+    ids_data = data[:-__TIME_LENGTH]
+    ids = str(ids_data, encoding='ascii')
+    user_id, service_id = ids.split('||')
+    assert service_id == current_service_id
+
     verify_signature(public_key, signature, data)
+
+    return user_id
