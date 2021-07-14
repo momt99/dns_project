@@ -7,7 +7,7 @@ from cryptography.exceptions import InvalidSignature
 import requests
 from flask import Flask, request
 
-from certificate_authority.csrgenerator import create_csr
+from utils.csrgenerator import create_csr
 
 app = Flask(__name__)
 
@@ -16,7 +16,7 @@ my_id = '1349283455'
 if not os.path.exists("assets"):
     os.mkdir("assets")
 
-key, csr = create_csr("localhost:6000")
+key, csr = create_csr("localhost:6000", "The Bank")
 
 cert = requests.post('http://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
                      verify=False, headers={'Content-type': 'application/octet-stream'})
