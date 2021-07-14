@@ -9,6 +9,7 @@ import requests
 from flask import Flask, request
 
 from certificate_authority.csrgenerator import create_csr
+from certificate_authority.validator import verify_certificate
 from utils.auth import verify_auth_header
 
 app = Flask(__name__)
