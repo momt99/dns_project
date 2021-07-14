@@ -1,17 +1,20 @@
+import json
 import os
 import time
 import uuid
+from datetime import datetime
 
 import requests
 from cryptography.hazmat.primitives import serialization
-from flask import Flask
+from flask import Flask, request
 
 from certificate_authority.csrgenerator import create_csr
+from utils.auth import create_auth_header, verify_auth_header
 
 my_id = '134986483465'
+bank_id = "1349283455"
 
 app = Flask(__name__)
-
 
 if not os.path.exists("assets"):
     os.mkdir("assets")
@@ -30,31 +33,42 @@ customers_paymentid_dict = dict()
 
 @app.route('<customer_id>/buy/<item_id>', methods=['POST'])
 def buy(customer_id, item_id):
-    # TODO: validate client
-
+    # TODO: validate client certificate
+    auth_header = request.headers.get("Authorization")
+    data = request.json
+    try:
+        verify_auth_header(auth_header, data["public_key"])
+    except:
+        return "Authentication failed.", 201
     payment_amount = items[int(item_id)]
     payment_id = str(uuid.uuid4())
     call_back_url = "http://localhost:8081/validate_payment/" + payment_id
     validity = 3600
-    # TODO: sent this information to server
-    customers_paymentid_dict[payment_id] = [customer_id, time.time(), validity, payment_amount, False]
+    customers_paymentid_dict[payment_id] = [customer_id, time.time(), validity, payment_amount, None, False]
     req = {"validity": validity, "callback": call_back_url, "amount": payment_amount}
-    auth_header = ""  # TODO: sign id.
-    requests.post()
-    pass
+    auth_header = create_auth_header(my_id, bank_id, private_key=key)
+    headers = {'content-type': 'application/json', "Authorization": auth_header}
+    payment_bank_id = requests.post("http://localhost:6000/payment", json.dumps(req), headers=headers)
+    customers_paymentid_dict[payment_id][-2] = payment_bank_id
+    return payment_bank_id
 
 
 @app.route('/validate_payment/<payment_id>', methods=['POST'])
 def validate(payment_id):
-    # TODO: validate server
+    data = request.json
+    bank_cert = data["certificate"] # TODO: validate certificate
+    bank_public_key = data["public_key"]
+    try:
+        verify_auth_header(request.headers.get("Authorization"), bank_public_key)
+    except:
+        return "Authentication Failed", 401
     customers_paymentid_dict[payment_id][-1] = True
-    # TODO: validate payment (send approve request) when bank completed.
-    requests.post()
-    pass
+    payment_bank_id = customers_paymentid_dict[payment_id][-2] = True
+    requests.post("https://localhost:6000/transaction/" + str(payment_bank_id) + "/approve")
+
 
 
 def create_bank_account():
-    bank_id = "1349283455"
     sign = my_id + "|" + bank_id
     sign = key.sign(sign)
     data = {"ID": my_id, "certificate": cert.text, "signature": sign}
@@ -65,4 +79,3 @@ def create_bank_account():
 create_bank_account()
 
 app.run(port=8081, ssl_context=('assets/certificate.pem', 'assets/key.pem'))
-
