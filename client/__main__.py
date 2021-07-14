@@ -5,7 +5,7 @@ import utils.auth
 from utils.auth import create_auth_header
 from utils.encoding import to_base64
 import requests
-from client.certificate_manager import load_certificate, load_private_key, obtain_certificate
+from client.certificate_manager import load_certificate, load_private_key, load_public_key, obtain_certificate
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ obtain_certificate()
 
 cert = load_certificate()
 private_key = load_private_key()
-public_key = private_key.public_key().public_bytes()
+public_key = load_public_key()
 utils.auth.default_private_key = private_key
 
 logger.info("Certificate and public key generation is done!")
