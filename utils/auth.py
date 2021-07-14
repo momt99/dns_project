@@ -9,7 +9,6 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 default_private_key: rsa.RSAPrivateKey = None
 
-
 __SIGNATURE_LENGTH = 256
 __TIME_LENGTH = 8
 
