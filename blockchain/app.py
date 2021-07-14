@@ -58,19 +58,20 @@ def exchange():
         if not verify_certificate(certificate):
             return "Invalid Certificate", 451
         amount = int(data['amount'])
+        user_id = data['user id']
         chosen_hash = hashes.SHA256()
         hasher = hashes.Hash(chosen_hash)
         hasher.update(str.encode(str(amount)))
+        hasher.update(str.encode(user_id))
         digest = hasher.finalize()
-        amount_signature = from_base64(data['amount_signature'])
+        amount_user_signature = from_base64(data['amount_user_signature'])
         try:
-            certificate.public_key().verify(amount_signature, digest, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
+            certificate.public_key().verify(amount_user_signature, digest, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
                                                                                   salt_length=padding.PSS.MAX_LENGTH),
                                             utils.Prehashed(chosen_hash))
         except InvalidSignature:
             return 'Amount signature Not Match', 452
         bank_id = extract_user_id(header)
-        user_id = data['user id']
         if permit_transaction(bank_id, amount):
             account[user_id]['value'] -= amount * each_dollar_how_much_crypto
             return "Successful payment", 201
