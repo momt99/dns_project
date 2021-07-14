@@ -19,13 +19,14 @@ from utils.auth import verify_auth_header
 from utils.csrgenerator import create_csr
 from utils.signing import *
 from utils.urls import *
+import utils.auth as auth
 
 app = Flask(__name__)
 
 my_id = utils.ids.BANK_ID
 
 key = obtain_certificate('bank/assets', 6000, 'The Bank')
-
+auth.default_private_key = key
 accounts = dict({})
 payments = dict({})
 
@@ -81,17 +82,21 @@ def pay(id):
         sig_amount = to_base64(
             key.sign(digest, padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                      hashes.SHA256()))
-        tmp = dict({'certificate': cert.public_bytes(serialization.Encoding.PEM),
+        tmp = dict({'certificate': to_base64(cert.public_bytes(serialization.Encoding.PEM)),
                     'header': create_auth_header(my_id, '1020156016'), 'amount': amount,
                     "user id": user_id, "amount_user_signature": sig_amount})
-        req = requests.get(
+        req = requests.post(
             f'{BC_URL}/exchange',
             json=tmp,
-            verify='certificate_authority/assets/certificate.pem')
+            verify=False)
         req.raise_for_status()
         if req.status_code == 201:
             accounts[payments[id]["seller_id"]]['value'] += payments[id]["amount"]
-            requests.get(payments[id]["callback"] + str(id), verify='certificate_authority/assets/certificate.pem')
+            res = requests.post(payments[id]["callback"],
+                                json=dict({"certificate": to_base64(cert.public_bytes(serialization.Encoding.PEM))}),
+                                headers={headers.AUTHORIZATION: create_auth_header(my_id, payments[id]["seller_id"])},
+                                verify=False)
+            res.raise_for_status()
             timer = threading.Timer(10.0, check_approve, [id, user_id])
             timer.start()
             return "Payment completed successfully", 201
@@ -112,8 +117,9 @@ def payment():
         seller_id = extract_user_id(auth_header)
         verify_auth_header(auth_header, accounts[seller_id]["public key"], my_id)
         payment_id = seller_id.__hash__() * int(amount) + random.randint(1, 100000000)
-        payments[payment_id] = {"seller_id": seller_id, "callback": callback, "validity": validity, "validated": False,
-                                "amount": amount}
+        payments[str(payment_id)] = {"seller_id": seller_id, "callback": callback, "validity": validity,
+                                     "validate": False,
+                                     "amount": amount}
         return str(payment_id), 200
     except InvalidSignature:
         return "Authentication failed.", 401
@@ -136,11 +142,11 @@ def approve(payment_id):
     payments[payment_id]["validate"] = True
 
 
-with open('assets/key.pem', "wb") as f:
-    f.write(key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"),
-    ))
+# with open('bank/assets/key.pem', "wb") as f:
+#     f.write(key.private_bytes(
+#         encoding=serialization.Encoding.PEM,
+#         format=serialization.PrivateFormat.TraditionalOpenSSL,
+#         encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"),
+#     ))
 
 app.run(ssl_context=('bank/assets/cert.pem', 'bank/assets/key.pem'), port=6000)
