@@ -82,19 +82,19 @@ def exchange():
         return "Bad create account data", 400
 
 
-@app.route("/delegate")
+@app.route("/delegate", methods=['POST'])
 def delegate():
     data = request.json
     try:
-        verify_certificate(
-            load_pem_x509_certificate(from_base64(data["certificate"])))
-        pub_key = data["public_key"]
+        cert = load_pem_x509_certificate(from_base64(data["certificate"]))
+        verify_certificate(cert)
+        # pub_key = data["public_key"]
         bank_id = data["bank_id"]
         user_id = data["user_id"]
         policy = Policy.from_bytes(from_base64(data["policy"]))
         sign = data["signature"]
-        pub_key = load_pem_public_key(bytes(pub_key, "utf-8"))
-        verify_signature(pub_key, sign, bytes(bank_id, 'ascii') + policy)
+        pub_key = cert.public_key()
+        verify_signature(pub_key, from_base64(sign), bytes(bank_id, 'ascii') + policy.to_bytes())
         account[user_id]["policies"].append((bank_id, policy))
         return "Created.", 201
     except ValueError:

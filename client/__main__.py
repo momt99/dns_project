@@ -21,13 +21,13 @@ obtain_certificate()
 
 cert = load_certificate()
 private_key = load_private_key()
-public_key = load_public_key()
+# public_key = load_public_key()
 utils.auth.default_private_key = private_key
 
 logger.info("Certificate and public key generation is done!")
 
 
-USER_ID = "THE_CLIENT"
+USER_ID = "135702468"
 
 
 def create_bank_account():
@@ -48,19 +48,20 @@ def create_bank_account():
 def buy_item():
     data = {
         'certificate': to_base64(cert),
-        'public_key': to_base64(public_key),
+        # 'public_key': to_base64(public_key),
     }
 
     response = requests.post(
         f'{SELLER_URL}/{USER_ID}/buy/2',
         json=data,
+        verify=False,
         headers={headers.AUTHORIZATION: create_auth_header(USER_ID, SELLER_ID)})
     response.raise_for_status()
 
-    data = response.json
+    data = response.json()
     payment_id, amount = data['payment_id'], data['amount']
     logger.info(f'Item buy request submitted successfully. ' +
-                'Payment Id = {payment_id}, Amount = {amount}')
+                f'Payment Id = {payment_id}, Amount = {amount}')
     return payment_id, amount
 
 
@@ -68,7 +69,8 @@ def pay_item(payment_id):
 
     response = requests.post(
         f'{BANK_URL}/payment/{payment_id}/pay',
-        headers={headers.AUTHORIZATION: create_auth_header(USER_ID, BANK_ID)}
+        headers={headers.AUTHORIZATION: create_auth_header(USER_ID, BANK_ID)},
+        verify=False
     )
     try:
         response.raise_for_status()
@@ -78,6 +80,7 @@ def pay_item(payment_id):
         if response.status_code == 460:
             logger.info('There was not a valid delegation for this payment.')
             return False, from_base64(str(response.content, 'ascii'))
+        return False, None
 
 
 def delegate(amount):
@@ -88,16 +91,17 @@ def delegate(amount):
         amount).to_bytes()
     data = {
         'certificate': to_base64(cert),
-        'public_key': to_base64(public_key),
-        'user_id': "XXXXXXX",
+        # 'public_key': to_base64(public_key),
+        'user_id': USER_ID,
         'bank_id': BANK_ID,
         'policy': to_base64(policy),
-        'signature': sign(private_key, bytes(BANK_ID, encoding='ascii') + policy)
+        'signature': to_base64(sign(private_key, bytes(BANK_ID, encoding='ascii') + policy))
     }
 
     response = requests.post(
         f'{BC_URL}/delegate',
-        json=data)
+        json=data,
+        verify=False)
     response.raise_for_status()
 
     logger.info('Delegation successfully done.')

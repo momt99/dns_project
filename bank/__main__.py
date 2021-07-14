@@ -64,7 +64,7 @@ def create():
 @app.route('/payment/<string:id>/pay', methods=['POST'])
 def pay(id):
     try:
-        header = request.data
+        header = request.headers[headers.AUTHORIZATION]
         user_id = extract_user_id(header)
         if not accounts.__contains__(user_id):
             return "You have not any account in our bank", 440
@@ -88,6 +88,7 @@ def pay(id):
             f'{BC_URL}/exchange',
             json=tmp,
             verify='certificate_authority/assets/certificate.pem')
+        req.raise_for_status()
         if req.status_code == 201:
             accounts[payments[id]["seller_id"]]['value'] += payments[id]["amount"]
             requests.get(payments[id]["callback"] + str(id), verify='certificate_authority/assets/certificate.pem')
@@ -108,16 +109,12 @@ def payment():
         validity = data["validity"]
         callback = data["callback"]
         auth_header = request.headers.get("Authorization")
-        auth_data = auth_header.split("|")
-        seller_id = auth_data[0]
-        bank_id = auth_data[1]
-        if bank_id != my_id:
-            return "Authentication failed.", 401
+        seller_id = extract_user_id(auth_header)
         verify_auth_header(auth_header, accounts[seller_id]["public key"], my_id)
         payment_id = seller_id.__hash__() * int(amount) + random.randint(1, 100000000)
         payments[payment_id] = {"seller_id": seller_id, "callback": callback, "validity": validity, "validated": False,
                                 "amount": amount}
-        return payment_id, 200
+        return str(payment_id), 200
     except InvalidSignature:
         return "Authentication failed.", 401
     except ValueError:

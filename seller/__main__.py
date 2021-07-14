@@ -4,7 +4,7 @@ import time
 
 from utils import headers, auth
 from utils.cert_helper import obtain_certificate, logger
-from utils.encoding import to_base64
+from utils.encoding import to_base64, from_base64
 from utils.paths import CA_CERT_PATH
 from utils.urls import BANK_URL
 import utils.ids
@@ -40,11 +40,11 @@ def buy(customer_id, item_id):
     auth_header = request.headers.get("Authorization")
     data = request.json
     try:
-        verify_certificate(x509.load_pem_x509_certificate(data["certificate"]))
-        verify_auth_header(auth_header, load_pem_public_key(
-            data["public_key"]), my_id)
+        cert = x509.load_pem_x509_certificate(from_base64(data["certificate"]))
+        verify_certificate(cert)
+        verify_auth_header(auth_header, cert.public_key(), my_id)
     except:
-        return "Authentication failed.", 201
+        return "Authentication failed.", 401
     payment_amount = items[int(item_id)]
     payment_id = str(uuid.uuid4())
     call_back_url = "http://localhost:8081/validate_payment/" + payment_id
@@ -56,8 +56,10 @@ def buy(customer_id, item_id):
     auth_header = create_auth_header(my_id, bank_id, private_key=key)
     headers = {'content-type': 'application/json',
                "Authorization": auth_header}
-    payment_bank_id = requests.post(
-        f"{BANK_URL}/payment", json.dumps(req), headers=headers)
+    response = requests.post(
+        f"{BANK_URL}/payment", json.dumps(req), headers=headers, verify=False)
+    response.raise_for_status()
+    payment_bank_id = response.text
     customers_paymentid_dict[payment_id][-2] = payment_bank_id
     return {'payment_id': payment_bank_id, 'amount': payment_amount}, 201
 
@@ -75,8 +77,9 @@ def validate(payment_id):
         return "Authentication Failed", 401
     customers_paymentid_dict[payment_id][-1] = True
     payment_bank_id = customers_paymentid_dict[payment_id][-2] = True
-    requests.post(f"{BANK_URL}/transaction/" +
+    res = requests.post(f"{BANK_URL}/transaction/" +
                   str(payment_bank_id) + "/approve")
+    res.raise_for_status()
 
 
 def create_bank_account():

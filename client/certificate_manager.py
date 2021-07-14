@@ -25,4 +25,4 @@ def load_private_key() -> RSAPrivateKey:
 
 def load_public_key() -> bytes:
     load_private_key().public_key().public_bytes(
-        serialization.Encoding.PEM, format=serialization.PublicFormat.PKCS1)
+        serialization.Encoding.PEM, format=serialization.PublicFormat.CompressedPoint)
