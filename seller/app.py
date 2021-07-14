@@ -5,7 +5,9 @@ import uuid
 from datetime import datetime
 
 import requests
+from cryptography import x509
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from flask import Flask, request
 
 from certificate_authority.csrgenerator import create_csr
@@ -37,8 +39,8 @@ def buy(customer_id, item_id):
     auth_header = request.headers.get("Authorization")
     data = request.json
     try:
-        verify_certificate(data["certificate"])
-        verify_auth_header(auth_header, data["public_key"])
+        verify_certificate(x509.load_pem_x509_certificate(data["certificate"]))
+        verify_auth_header(auth_header, load_pem_public_key(data["public_key"]), my_id)
     except:
         return "Authentication failed.", 201
     payment_amount = items[int(item_id)]
@@ -57,11 +59,11 @@ def buy(customer_id, item_id):
 @app.route('/validate_payment/<payment_id>', methods=['POST'])
 def validate(payment_id):
     data = request.json
-    bank_cert = data["certificate"]
-    bank_public_key = data["public_key"]
+    bank_cert = x509.load_pem_x509_certificate(data["certificate"])
+    bank_public_key = load_pem_public_key(data["public_key"])
     try:
         verify_certificate(bank_cert)
-        verify_auth_header(request.headers.get("Authorization"), bank_public_key)
+        verify_auth_header(request.headers.get("Authorization"), bank_public_key, my_id)
     except:
         return "Authentication Failed", 401
     customers_paymentid_dict[payment_id][-1] = True

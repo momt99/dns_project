@@ -85,7 +85,7 @@ def payment():
         bank_id = auth_data[1]
         if bank_id != my_id:
             return "Authentication failed.", 401
-        verify_auth_header(auth_header, accounts[seller_id]["public key"])
+        verify_auth_header(auth_header, accounts[seller_id]["public key"], my_id)
         payment_id = seller_id.__hash__() * int(amount) + random.randint(1, 100000000)
         payments[payment_id] = {"seller_id": seller_id, "callback": callback, "validity": validity, "validated": False}
         return payment_id, 200
@@ -104,7 +104,7 @@ def approve(payment_id):
         bank_id = auth_data[1]
         if bank_id != my_id:
             return "Authentication failed.", 401
-        verify_auth_header(auth_header, accounts[seller_id]["public key"])
+        verify_auth_header(auth_header, accounts[seller_id]["public key"], my_id)
     except:
         return "Authentication Failed."
     payments[payment_id]["validate"] = True
