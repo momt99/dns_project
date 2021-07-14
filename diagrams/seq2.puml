@@ -1,0 +1,21 @@
+@startuml
+
+participant Client
+participant Seller
+participant Bank
+participant Exchange
+
+Client -> Bank : Create Account: ID<sub>C</sub>, ID<sub>B</sub>, T, Sign<sub>C</sub>(ID<sub>C</sub>, ID<sub>B</sub>, T), Cert<sub>C</sub>
+Seller -> Bank : Create Account: ID<sub>S</sub>, ID<sub>B</sub>, T, Sign<sub>C</sub>(ID<sub>S</sub>, ID<sub>B</sub>, T), Cert<sub>S</sub>
+
+Client -> Seller : Buy: ID<sub>C</sub>, ID<sub>S</sub>, T, Sign<sub>C</sub>(ID<sub>C</sub>, ID<sub>S</sub>, T), Cert<sub>C</sub>
+Seller -> Client : ID<sub>Payment</sub>
+
+Client -> Bank : ID<sub>C</sub>, ID<sub>B</sub>, T, Sign<sub>C</sub>(ID<sub>C</sub>, ID<sub>B</sub>, T), ID<sub>Payment</sub>
+Bank -> Exchange : Exchange : PU<sub>C</sub>, PU<sub>B</sub>, IDE, T, Amount, Price, Cert<sub>B</sub>, Sign(PUC, PUB, IDE, T, Amount, Price)
+Client -> Exchange: Delegate: ID<sub>C</sub>, Cert<sub>C</sub>, ID<sub>Bank</sub>, Policy, Sign<sub>C</sub>([ID<sub>Bank</sub>, Policy])
+
+Bank -> Seller : Inform: ID<sub>Payment</sub>, ID<sub>Transaction</sub>, Cert<sub>B</sub>, Sign<sub>B</sub>(ID<sub>Payment</sub>, ID<sub>Transaction</sub>)
+Seller -> Bank : Approve: ID<sub>S</sub>, ID<sub>B</sub>, T, Sign<sub>C</sub>(ID<sub>S</sub>, ID<sub>B</sub>, T),
+
+@enduml
