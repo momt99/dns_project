@@ -1,0 +1,6 @@
+cryptography==2.8
+requests==2.25.0
+flask==2.0.1
+typing~=3.7.4.3
+SQLAlchemy~=1.4.20
+Werkzeug~=2.0.1
