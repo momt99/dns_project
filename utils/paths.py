@@ -1,0 +1,1 @@
+CA_CERT_PATH = 'certificate_authority/assets/certificate.pem'
