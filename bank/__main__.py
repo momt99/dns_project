@@ -20,6 +20,7 @@ from utils.csrgenerator import create_csr
 from utils.signing import *
 from utils.urls import *
 import utils.auth as auth
+
 app = Flask(__name__)
 
 my_id = utils.ids.BANK_ID
@@ -92,7 +93,10 @@ def pay(id):
         if req.status_code == 201:
             accounts[payments[id]["seller_id"]]['value'] += payments[id]["amount"]
             print("I'm callback:", payments[id]["callback"])
-            res = requests.post(payments[id]["callback"] + str(id), verify=False)
+            res = requests.post(payments[id]["callback"] + str(id),
+                                json=dict({"certificate": to_base64(cert.public_bytes(serialization.Encoding.PEM))}),
+                                headers={headers.AUTHORIZATION: create_auth_header(my_id, payments[id]["seller_id"])},
+                                verify=False)
             res.raise_for_status()
             timer = threading.Timer(10.0, check_approve, [id, user_id])
             timer.start()
