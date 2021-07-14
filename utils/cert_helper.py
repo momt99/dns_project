@@ -69,6 +69,8 @@ def obtain_certificate(
         logger.info(
             f'Certificate successfully loaded and stored in {cert_path}.')
 
+    return key
+
 
 class ServerThread(Thread):
 
