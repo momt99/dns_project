@@ -100,4 +100,4 @@ def delegate():
     except ValueError:
         return "Bad create account data", 400
 
-app.run(ssl_context=('assets/cert.pem', 'assets/key.pem'), port=7000)
+app.run(ssl_context=('blockchain/assets/cert.pem', 'blockchain/assets/key.pem'), port=7000)
