@@ -3,6 +3,8 @@ import random
 
 import requests
 from cryptography import x509
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
 from flask import Flask, request
 
@@ -10,6 +12,8 @@ from certificate_authority.csrgenerator import create_csr
 from certificate_authority.validator import verify_certificate
 from utils.auth import *
 from utils.signing import *
+from certificate_authority.validator import verify_certificate
+from utils.auth import verify_auth_header
 
 app = Flask(__name__)
 

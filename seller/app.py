@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives import serialization
 from flask import Flask, request
 
 from certificate_authority.csrgenerator import create_csr
+from certificate_authority.validator import verify_certificate
 from utils.auth import create_auth_header, verify_auth_header
 
 my_id = '134986483465'
@@ -33,10 +34,10 @@ customers_paymentid_dict = dict()
 
 @app.route('<customer_id>/buy/<item_id>', methods=['POST'])
 def buy(customer_id, item_id):
-    # TODO: validate client certificate
     auth_header = request.headers.get("Authorization")
     data = request.json
     try:
+        verify_certificate(data["certificate"])
         verify_auth_header(auth_header, data["public_key"])
     except:
         return "Authentication failed.", 201
@@ -56,9 +57,10 @@ def buy(customer_id, item_id):
 @app.route('/validate_payment/<payment_id>', methods=['POST'])
 def validate(payment_id):
     data = request.json
-    bank_cert = data["certificate"] # TODO: validate certificate
+    bank_cert = data["certificate"]
     bank_public_key = data["public_key"]
     try:
+        verify_certificate(bank_cert)
         verify_auth_header(request.headers.get("Authorization"), bank_public_key)
     except:
         return "Authentication Failed", 401
