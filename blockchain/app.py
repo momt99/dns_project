@@ -80,7 +80,7 @@ def exchange():
         except InvalidSignature:
             return 'Amount signature Not Match', 452
         bank_id = extract_user_id(header)
-        if permit_transaction(bank_id, amount):
+        if permit_transaction(bank_id, amount, user_id):
             account[user_id]['value'] -= amount * each_dollar_how_much_crypto
             return "Successful payment", 201
         else:

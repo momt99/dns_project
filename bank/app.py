@@ -14,6 +14,7 @@ from utils.auth import *
 from utils.signing import *
 from certificate_authority.validator import verify_certificate
 from utils.auth import verify_auth_header
+import threading
 
 import utils.ids
 
@@ -34,6 +35,12 @@ with open('assets/certificate.pem', "w") as f:
 
 accounts = dict({})
 payments = dict({})
+
+
+def check_approve(payment_id, user_id):
+    if not payments[payment_id]["validate"]:
+        accounts[user_id] += payments[payment_id]["amount"]
+        accounts[payments[payment_id]["seller_id"]]['value'] -= payments[payment_id]["amount"]
 
 
 @app.route('/create', methods=['POST'])
@@ -69,7 +76,7 @@ def pay(id):
             verify_auth_header(header, accounts[user_id]['public key'], my_id)
         except InvalidSignature:
             return "Authentication failed", 450
-        amount = str(payments["amount"])
+        amount = str(payments[id]["amount"])
         chosen_hash = hashes.SHA256()
         hasher = hashes.Hash(chosen_hash)
         hasher.update(str.encode(amount))
@@ -82,14 +89,16 @@ def pay(id):
                     "user id": user_id, "amount_user_signature": sig_amount})
         req = requests.get(
             f'https://localhost:7000/exchange',
-            json={'message': tmp},
+            json=tmp,
             verify='certificate_authority/assets/certificate.pem')
         if req.status_code == 201:
-            pass
-            # todo: Inform seller and buyer
+            accounts[payments[id]["seller_id"]]['value'] += payments[id]["amount"]
+            requests.get(payments[id]["callback"] + str(id), verify='certificate_authority/assets/certificate.pem')
+            timer = threading.Timer(10.0, check_approve, [id, user_id])
+            timer.start()
+            return "Payment completed successfully", 201
         else:
-            pass
-            # todo: Inform seller
+            return "Unable to use your cryptocurrency wallet", 460
     except ValueError:
         return "Bad create account data", 400
 
