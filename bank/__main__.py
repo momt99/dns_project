@@ -92,8 +92,7 @@ def pay(id):
         req.raise_for_status()
         if req.status_code == 201:
             accounts[payments[id]["seller_id"]]['value'] += payments[id]["amount"]
-            print("I'm callback:", payments[id]["callback"])
-            res = requests.post(payments[id]["callback"] + str(id),
+            res = requests.post(payments[id]["callback"],
                                 json=dict({"certificate": to_base64(cert.public_bytes(serialization.Encoding.PEM))}),
                                 headers={headers.AUTHORIZATION: create_auth_header(my_id, payments[id]["seller_id"])},
                                 verify=False)
@@ -119,7 +118,7 @@ def payment():
         verify_auth_header(auth_header, accounts[seller_id]["public key"], my_id)
         payment_id = seller_id.__hash__() * int(amount) + random.randint(1, 100000000)
         payments[str(payment_id)] = {"seller_id": seller_id, "callback": callback, "validity": validity,
-                                     "validated": False,
+                                     "validate": False,
                                      "amount": amount}
         return str(payment_id), 200
     except InvalidSignature:

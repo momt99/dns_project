@@ -77,8 +77,9 @@ def validate(payment_id):
     customers_paymentid_dict[payment_id][-1] = True
     payment_bank_id = customers_paymentid_dict[payment_id][-2] = True
     res = requests.post(f"{BANK_URL}/transaction/" +
-                  str(payment_bank_id) + "/approve")
+                  str(payment_bank_id) + "/approve", verify=False)
     res.raise_for_status()
+    return "Ok", 200
 
 
 def create_bank_account():

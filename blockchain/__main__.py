@@ -35,12 +35,11 @@ each_dollar_how_much_crypto = 200
 
 def permit_transaction(bank_id, amount, account_id):
     from datetime import datetime
-    return True
     for policy in account[account_id]["policies"]:
         if policy[0] == bank_id:
             p: Policy = policy[1]
-            check = datetime.utcfromtimestamp(p.end_time * 1.0) >= datetime.utcnow() >= datetime.utcfromtimestamp(p.start_time * 1.0) \
-                and p.count >= 0 and p.maximum_amount >= amount
+            check = (datetime.fromtimestamp(p.end_time * 1.0) >= datetime.utcnow() >= datetime.fromtimestamp(
+                p.start_time * 1.0) and p.count >= 0 and p.maximum_amount >= amount)
             if check:
                 return True
     return False
@@ -100,5 +99,6 @@ def delegate():
         return "Created.", 201
     except ValueError:
         return "Bad create account data", 400
+
 
 app.run(ssl_context=('blockchain/assets/cert.pem', 'blockchain/assets/key.pem'), port=7000)
