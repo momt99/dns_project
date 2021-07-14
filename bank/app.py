@@ -69,7 +69,27 @@ def pay(id):
             verify_auth_header(header, accounts[user_id]['public key'], my_id)
         except InvalidSignature:
             return "Authentication failed", 450
-        # todo contact blockchain fro payment
+        amount = str(payments["amount"])
+        chosen_hash = hashes.SHA256()
+        hasher = hashes.Hash(chosen_hash)
+        hasher.update(str.encode(amount))
+        hasher.update(str.encode(user_id))
+        digest = hasher.finalize()
+        sig_amount = to_base64(
+            key.sign(digest, padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
+                     hashes.SHA256()))
+        tmp = dict({'certificate': cert.text, 'header': create_auth_header(my_id, '1020156016'), 'amount': amount,
+                    "user id": user_id, "amount_user_signature": sig_amount})
+        req = requests.get(
+            f'https://localhost:7000/exchange',
+            json={'message': tmp},
+            verify='certificate_authority/assets/certificate.pem')
+        if req.status_code == 201:
+            pass
+            # todo: Inform seller and buyer
+        else:
+            pass
+            # todo: Inform seller
     except ValueError:
         return "Bad create account data", 400
 
@@ -89,7 +109,8 @@ def payment():
             return "Authentication failed.", 401
         verify_auth_header(auth_header, accounts[seller_id]["public key"], my_id)
         payment_id = seller_id.__hash__() * int(amount) + random.randint(1, 100000000)
-        payments[payment_id] = {"seller_id": seller_id, "callback": callback, "validity": validity, "validated": False}
+        payments[payment_id] = {"seller_id": seller_id, "callback": callback, "validity": validity, "validated": False,
+                                "amount": amount}
         return payment_id, 200
     except InvalidSignature:
         return "Authentication failed.", 401
