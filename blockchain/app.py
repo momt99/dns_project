@@ -1,4 +1,5 @@
 import os
+import time
 
 import requests
 from cryptography import x509
@@ -41,8 +42,15 @@ account['0987654321'] = dict(
 each_dollar_how_much_crypto = 200
 
 
-def permit_transaction(bank_id, amount):
-    pass
+def permit_transaction(bank_id, amount, account_id):
+    from datetime import datetime
+    for policy in account[account_id]["policies"]:
+        if policy[0] == bank_id:
+            check = datetime.utcfromtimestamp(policy[1][1]) >= datetime.utcnow() >= datetime.utcfromtimestamp(policy[1][0]) \
+                    and policy[1][2] >= 0 and policy[1][3] <= amount
+            if check:
+                return True
+    return False
 
 
 @app.route('/exchange', methods=['POST'])
