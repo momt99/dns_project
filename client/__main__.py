@@ -41,6 +41,8 @@ def create_bank_account():
     )
     response.raise_for_status()
 
+    logger.info('Bank account created successfully.')
+
 
 def buy_item():
     data = {
@@ -55,7 +57,10 @@ def buy_item():
     response.raise_for_status()
 
     data = response.json
-    return data['payment_id'], data['amount']
+    payment_id, amount = data['payment_id'], data['amount']
+    logger.info(f'Item buy request submitted successfully. ' +
+                'Payment Id = {payment_id}, Amount = {amount}')
+    return payment_id, amount
 
 
 def pay_item(payment_id):
@@ -66,9 +71,11 @@ def pay_item(payment_id):
     )
     try:
         response.raise_for_status()
+        logger.info('Item payment has been successfully done.')
         return True, None
     except HTTPError:
         if response.status_code == 460:
+            logger.info('There was not a valid delegation for this payment.')
             return False, from_base64(str(response.content, 'ascii'))
 
 
@@ -91,6 +98,8 @@ def delegate(amount):
         f'{BC_URL}/delegate',
         json=data)
     response.raise_for_status()
+
+    logger.info('Delegation successfully done.')
 
 
 create_bank_account()
