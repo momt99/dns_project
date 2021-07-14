@@ -10,6 +10,8 @@ from flask import Flask, request
 
 import utils.ids
 from certificate_authority.validator import verify_certificate
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.hazmat.primitives import serialization
 from utils.auth import *
 from utils.auth import verify_auth_header
 from utils.csrgenerator import create_csr
@@ -19,11 +21,18 @@ from utils.urls import *
 app = Flask(__name__)
 
 my_id = utils.ids.BANK_ID
+KEY_PASS = b"THE_BANK_PASS"
 
-obtain_certificate('blockchain/assets', 6000, 'The Bank', None)
+obtain_certificate('blockchain/assets', 6000, 'The Bank', KEY_PASS)
 
 accounts = dict({})
 payments = dict({})
+
+with open('assets/key.pem', 'rb') as f:
+    key = load_pem_private_key(f.read(), password=KEY_PASS)
+
+with open('assets/certificate.pem', 'rb') as f:
+    cert = x509.load_pem_x509_certificate(f.read())
 
 
 def check_approve(payment_id, user_id):
@@ -74,7 +83,8 @@ def pay(id):
         sig_amount = to_base64(
             key.sign(digest, padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                      hashes.SHA256()))
-        tmp = dict({'certificate': cert.text, 'header': create_auth_header(my_id, '1020156016'), 'amount': amount,
+        tmp = dict({'certificate': cert.public_bytes(serialization.Encoding.PEM),
+                    'header': create_auth_header(my_id, '1020156016'), 'amount': amount,
                     "user id": user_id, "amount_user_signature": sig_amount})
         req = requests.get(
             f'{BC_URL}/exchange',
