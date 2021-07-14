@@ -36,7 +36,7 @@ with open('bank/assets/cert.pem', 'rb') as f:
 
 def check_approve(payment_id, user_id):
     if not payments[payment_id]["validate"]:
-        accounts[user_id] += payments[payment_id]["amount"]
+        accounts[user_id]["value"] += payments[payment_id]["amount"]
         accounts[payments[payment_id]["seller_id"]]['value'] -= payments[payment_id]["amount"]
 
 
@@ -74,13 +74,9 @@ def pay(id):
         except InvalidSignature:
             return "Authentication failed", 450
         amount = str(payments[id]["amount"])
-        chosen_hash = hashes.SHA256()
-        hasher = hashes.Hash(chosen_hash)
-        hasher.update(str.encode(amount))
-        hasher.update(str.encode(user_id))
-        digest = hasher.finalize()
+        message = str.encode(amount + user_id)
         sig_amount = to_base64(
-            key.sign(digest, padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
+            key.sign(message, padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                      hashes.SHA256()))
         tmp = dict({'certificate': to_base64(cert.public_bytes(serialization.Encoding.PEM)),
                     'header': create_auth_header(my_id, '1020156016'), 'amount': amount,
