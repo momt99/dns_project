@@ -4,15 +4,16 @@ from cryptography.x509 import OID_COMMON_NAME
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
-from database import db
-from models import *
+from certificate_authority.database import db
+from certificate_authority.models import *
 from os import urandom
+from utils.signing import get_default_padding, get_default_hash
 
 
 def issue_certificate(csr: CertificateSigningRequest) -> Certificate:
-    with open("assets/key.pem", "rb") as file:
+    with open("certificate_authority/assets/key.pem", "rb") as file:
         key = serialization.load_pem_private_key(file.read(), None)
-    with open("assets/certificate.pem", "rb") as file:
+    with open("certificate_authority/assets/certificate.pem", "rb") as file:
         cert = load_pem_x509_certificate(file.read())
 
     cert = (CertificateBuilder(extensions=csr.extensions)
@@ -23,7 +24,7 @@ def issue_certificate(csr: CertificateSigningRequest) -> Certificate:
             .not_valid_before(datetime.datetime.utcnow())
             .not_valid_after(datetime.datetime.utcnow() + datetime.timedelta(days=1 * 365))
             # Sign our certificate with our private key
-            .sign(key, hashes.SHA256()))
+            .sign(key, get_default_hash()))
 
     db.session.add(
         IssuedCertificate(
@@ -59,12 +60,7 @@ def define_sign_request(csr_data: bytes):
         request.trust_address,
         csr.public_key().encrypt(
             request.secret_message,
-            padding.OAEP(
-                mgf=padding.MGF1(
-                    algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            )))
+            get_default_padding()))
 
 
 def verify_decrypted_message_and_issue(id: str, message: bytes) -> bytes:

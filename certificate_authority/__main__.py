@@ -1,11 +1,11 @@
 
-from cryptography.hazmat.primitives import hashes, serialization
+from utils.encoding import from_base64, to_base64
+from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import load_pem_x509_csr
 from flask import Flask, request
 import requests
-import base64
 from flask_sqlalchemy import SQLAlchemy
-import database
+from certificate_authority import database
 
 
 app = Flask(__name__)
@@ -23,8 +23,8 @@ def sign():
         return "Bad content type.", 400
 
     try:
+        from certificate_authority import cert_issuer
         csr = load_pem_x509_csr(request.data)
-        import cert_issuer
         cert = cert_issuer.issue_certificate(csr)
         return cert.public_bytes(encoding=serialization.Encoding.PEM), 201
     except ValueError:
@@ -38,7 +38,7 @@ def certificate():
         return "Bad content type.", 400
 
     try:
-        import cert_issuer
+        from certificate_authority import cert_issuer
         id, trust_address, secret_message = cert_issuer.define_sign_request(
             request.data)
     except ValueError as e:
@@ -50,9 +50,9 @@ def certificate():
             trust_address+'/box',
             json={
                 'id': id,
-                'message': str(base64.b64encode(secret_message), encoding='ascii')
+                'message': to_base64(secret_message)
             },
-            verify='assets/certificate.pem')
+            verify='certificate_authority/assets/certificate.pem')
         response.raise_for_status()
     except Exception as e:
         print(e)
@@ -64,9 +64,9 @@ def certificate():
 @app.route('/authenticate/<string:id>', methods=['POST'])
 def authenticate(id):
     message = request.json['message']
-    import cert_issuer
+    from certificate_authority import cert_issuer
     cert_bytes = cert_issuer.verify_decrypted_message_and_issue(
-        id, base64.b64decode(message))
+        id, from_base64(message))
 
     return str(cert_bytes, encoding='ascii')
 
@@ -77,23 +77,20 @@ def box():
     id = body['id']
     secret_message = body['message']
 
-    with open("assets/keytest.pem", "rb") as file:
+    with open("certificate_authority/assets/keytest.pem", "rb") as file:
         key = serialization.load_pem_private_key(file.read(), None)
-        from cryptography.hazmat.primitives.asymmetric import padding
+        from utils.signing import get_default_padding
         message = key.decrypt(
-            base64.b64decode(secret_message),
-            padding.OAEP(
-                mgf=padding.MGF1(
-                    algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            ))
+            from_base64(secret_message),
+            get_default_padding())
         requests.post(
             f'https://localhost:5000/authenticate/{id}',
-            json={'message': str(base64.b64encode(message), encoding='ascii')},
-            verify='assets/certificate.pem')
+            json={'message': to_base64(message)},
+            verify='certificate_authority/assets/certificate.pem')
 
     return "Done", 200
 
 
-app.run(ssl_context=('assets/certificate.pem', 'assets/key.pem'))
+app.run(ssl_context=(
+        'certificate_authority/assets/certificate.pem',
+        'certificate_authority/assets/key.pem'))

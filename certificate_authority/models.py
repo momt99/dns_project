@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import *
-from database import db
+from certificate_authority.database import db
 
 
 class SignRequest(db.Model):
