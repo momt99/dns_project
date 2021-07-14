@@ -1,0 +1,11 @@
+@startuml
+
+participant CA
+participant Requestor
+
+Requestor -> CA : CSR(ID, PU, Sign)
+CA -> Requestor : E(PU, [Message])
+Requestor -> CA : Message
+CA -> Requestor : Certificate
+
+@enduml

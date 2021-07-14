@@ -13,7 +13,7 @@ Seller -> Client : Payment Id
 
 Client -> Bank : Pay
 Bank -> Exchange : Exchange
-
+Bank --> Client : Inform
 Bank -> Seller : Inform
 Seller -> Bank : Approve
 
