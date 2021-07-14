@@ -1,19 +1,32 @@
+import os
 import time
-from random import random
 import uuid
 
-from cryptography.hazmat.primitives import serialization
-from flask import Flask, request
 import requests
+from cryptography.hazmat.primitives import serialization
+from flask import Flask
 
-seller_id = "SELLER"
+from certificate_authority.csrgenerator import create_csr
 
+my_id = '134986483465'
 
 app = Flask(__name__)
 
-items = {1: 100, 2: 200, 3: 300, 4: 400, 5: 500}
 
+if not os.path.exists("assets"):
+    os.mkdir("assets")
+
+key, csr = create_csr("localhost:6000")
+
+cert = requests.post('http://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
+                     verify=False, headers={'Content-type': 'application/octet-stream'})
+
+with open('assets/certificate.pem', "w") as f:
+    f.write(cert.text)
+
+items = {1: 100, 2: 200, 3: 300, 4: 400, 5: 500}
 customers_paymentid_dict = dict()
+
 
 @app.route('<customer_id>/buy/<item_id>', methods=['POST'])
 def buy(customer_id, item_id):
@@ -39,4 +52,17 @@ def validate(payment_id):
     requests.post()
     pass
 
+
+def create_bank_account():
+    bank_id = "1349283455"
+    sign = my_id + "|" + bank_id
+    sign = key.sign(sign)
+    data = {"ID": my_id, "certificate": cert.text, "signature": sign}
+    res = requests.post("https://localhost:6000/create", data, verify=False)  # TODO: verify with ca key.
+    assert res.status_code == 201
+
+
+create_bank_account()
+
 app.run(port=8081, ssl_context=('assets/certificate.pem', 'assets/key.pem'))
+
