@@ -56,6 +56,22 @@ def create():
         return "Bad create account data", 400
 
 
+@app.route('/payment/<string:id>/pay', methods=['POST'])
+def pay(id):
+    try:
+        header = request.data
+        user_id = extract_user_id(header)
+        if not accounts.__contains__(user_id):
+            return "You have not any account in our bank", 440
+        try:
+            verify_auth_header(header, accounts[user_id]['public key'], my_id)
+        except InvalidSignature:
+            return "Authentication failed", 450
+        # todo contact blockchain fro payment
+    except ValueError:
+        return "Bad create account data", 400
+
+
 @app.route('/payment', methods=['POST'])
 def payment():
     try:
