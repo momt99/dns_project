@@ -1,22 +1,19 @@
 import os
 import random
+import threading
 
 import requests
 from cryptography import x509
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
 from flask import Flask, request
 
-from utils.csrgenerator import create_csr
+import utils.ids
 from certificate_authority.validator import verify_certificate
 from utils.auth import *
-from utils.signing import *
-from certificate_authority.validator import verify_certificate
 from utils.auth import verify_auth_header
-import threading
-
-import utils.ids
+from utils.csrgenerator import create_csr
+from utils.signing import *
+from utils.urls import *
 
 app = Flask(__name__)
 
@@ -88,7 +85,7 @@ def pay(id):
         tmp = dict({'certificate': cert.text, 'header': create_auth_header(my_id, '1020156016'), 'amount': amount,
                     "user id": user_id, "amount_user_signature": sig_amount})
         req = requests.get(
-            f'https://localhost:7000/exchange',
+            f'{BC_URL}/exchange',
             json=tmp,
             verify='certificate_authority/assets/certificate.pem')
         if req.status_code == 201:
