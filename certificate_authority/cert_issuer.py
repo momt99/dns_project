@@ -1,9 +1,7 @@
 import datetime
 from cryptography.x509 import *
 from cryptography.x509 import OID_COMMON_NAME
-from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hashes
 from certificate_authority.database import db
 from certificate_authority.models import *
 from os import urandom

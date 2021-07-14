@@ -6,7 +6,7 @@ import requests
 from cryptography.hazmat.primitives import serialization
 from flask import Flask
 
-from certificate_authority.csrgenerator import create_csr
+from utils.csrgenerator import create_csr
 
 my_id = '134986483465'
 
@@ -16,7 +16,7 @@ app = Flask(__name__)
 if not os.path.exists("assets"):
     os.mkdir("assets")
 
-key, csr = create_csr("localhost:6000")
+key, csr = create_csr("localhost:6000", "The Seller")
 
 cert = requests.post('http://127.0.0.1:5000/sign', data=csr.public_bytes(serialization.Encoding.PEM),
                      verify=False, headers={'Content-type': 'application/octet-stream'})

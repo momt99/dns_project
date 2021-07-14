@@ -8,7 +8,7 @@ from cryptography.x509.oid import NameOID
 
 # Generate key and certificate
 
-def create_csr(ip_port):
+def create_csr(ip_port, organization_name=None):
     key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048,
@@ -22,6 +22,7 @@ def create_csr(ip_port):
         x509.NameAttribute(NameOID.LOCALITY_NAME, u"Tehran"),
         x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"DNS Project Group"),
         x509.NameAttribute(NameOID.COMMON_NAME, ip_port),
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, organization_name),
     ])).sign(key, hashes.SHA256())
 
     return key, csr
