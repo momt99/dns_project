@@ -29,15 +29,12 @@ accounts = dict({})
 
 @app.route('/create', methods=['POST'])
 def create():
-    if not (request.content_type == request.content_type == 'text/plain'):
-        return "Bad content type.", 400
-
     try:
-        data = request.content_type.split('|')
-        certificate = x509.load_pem_x509_certificate(data[1])
+        data = request.json
+        certificate = x509.load_pem_x509_certificate(data['certificate'])
         public_key = certificate.public_key()
         try:
-            public_key.verify(data[2], data[0] + '|' + my_id,
+            public_key.verify(data['signature'], data['ID'] + '|' + my_id,
                               padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
                               hashes.SHA256())
         except InvalidSignature:
