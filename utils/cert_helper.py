@@ -23,7 +23,7 @@ def obtain_certificate(
     files_path: str,
     port: int,
     organization_name: str,
-    key_pass,
+    key_pass = b"f",
     key_file_name='key.pem',
     cert_file_name='cert.pem'
 ):

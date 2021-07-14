@@ -20,7 +20,7 @@ app = Flask(__name__)
 
 my_id = utils.ids.BANK_ID
 
-obtain_certificate('blockchain/assets', 6000, 'The Bank', None)
+obtain_certificate('blockchain/assets', 6000, 'The Bank')
 
 accounts = dict({})
 payments = dict({})
@@ -138,4 +138,4 @@ with open('assets/key.pem', "wb") as f:
         encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"),
     ))
 
-app.run(ssl_context=('assets/cert.pem', 'assets/key.pem'), port=6000)
+app.run(ssl_context=('bank/assets/cert.pem', 'bank/assets/key.pem'), port=6000)
