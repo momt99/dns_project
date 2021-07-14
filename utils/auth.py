@@ -45,7 +45,15 @@ def create_auth_header(
     return to_base64(data + signature)
 
 
-def verify_and_extract_auth_header(
+def extract_user_id(header_value: str):
+    value = from_base64(header_value)
+    data = value[:-__SIGNATURE_LENGTH]
+    ids_data = data[:-__TIME_LENGTH]
+    ids = str(ids_data, encoding='ascii')
+    return ids.split('||')[0]
+
+
+def verify_auth_header(
         header_value: str, public_key: rsa.RSAPublicKey, current_service_id: str):
     value = from_base64(header_value)
     data = value[:-__SIGNATURE_LENGTH]
@@ -57,9 +65,7 @@ def verify_and_extract_auth_header(
 
     ids_data = data[:-__TIME_LENGTH]
     ids = str(ids_data, encoding='ascii')
-    user_id, service_id = ids.split('||')
+    service_id = ids.split('||')[1]
     assert service_id == current_service_id
 
     verify_signature(public_key, signature, data)
-
-    return user_id
