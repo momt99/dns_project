@@ -1,4 +1,5 @@
 import os
+import random
 
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization, hashes
@@ -8,6 +9,7 @@ import requests
 from flask import Flask, request
 
 from certificate_authority.csrgenerator import create_csr
+from utils.auth import verify_auth_header
 
 app = Flask(__name__)
 
@@ -25,6 +27,7 @@ with open('assets/certificate.pem', "w") as f:
     f.write(cert.text)
 
 accounts = dict({})
+payments = dict({})
 
 
 @app.route('/create', methods=['POST'])
@@ -45,6 +48,44 @@ def create():
         return "Account created successfully", 201
     except ValueError:
         return "Bad create account data", 400
+
+
+@app.route('/payment', methods=['POST'])
+def payment():
+    try:
+        data = request.json
+        amount = data["amount"]
+        validity = data["validity"]
+        callback = data["callback"]
+        auth_header = request.headers.get("Authorization")
+        auth_data = auth_header.split("|")
+        seller_id = auth_data[0]
+        bank_id = auth_data[1]
+        if bank_id != my_id:
+            return "Authentication failed.", 401
+        verify_auth_header(auth_header, accounts[seller_id]["public key"])
+        payment_id = seller_id.__hash__() * int(amount) + random.randint(1, 100000000)
+        payments[payment_id] = {"seller_id": seller_id, "callback": callback, "validity": validity, "validated": False}
+        return payment_id, 200
+    except InvalidSignature:
+        return "Authentication failed.", 401
+    except ValueError:
+        return "Bad create account data", 400
+
+
+@app.route('/transaction/<payment_id>/approve', methods=['POST'])
+def approve(payment_id):
+    try:
+        auth_header = request.headers.get("Authorization")
+        auth_data = auth_header.split("|")
+        seller_id = auth_data[0]
+        bank_id = auth_data[1]
+        if bank_id != my_id:
+            return "Authentication failed.", 401
+        verify_auth_header(auth_header, accounts[seller_id]["public key"])
+    except:
+        return "Authentication Failed."
+    payments[payment_id]["validate"] = True
 
 
 with open('assets/key.pem', "wb") as f:
