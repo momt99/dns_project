@@ -95,7 +95,7 @@ def pay(id):
             timer.start()
             return "Payment completed successfully", 201
         else:
-            return "Unable to use your cryptocurrency wallet", 460
+            return to_base64(key.public_key().public_bytes(serialization.Encoding.PEM)), 460
     except ValueError:
         return "Bad create account data", 400
 
