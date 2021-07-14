@@ -83,4 +83,4 @@ def create_bank_account():
 
 create_bank_account()
 
-app.run(port=8081, ssl_context=('assets/cert.pem', 'assets/key.pem'))
+app.run(port=8081, ssl_context=('seller/assets/cert.pem', 'seller/assets/key.pem'))

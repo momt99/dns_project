@@ -148,4 +148,4 @@ with open('assets/key.pem', "wb") as f:
         encryption_algorithm=serialization.BestAvailableEncryption(b"passphrase"),
     ))
 
-app.run(ssl_context=('assets/cert.pem', 'assets/key.pem'), port=6000)
+app.run(ssl_context=('bank/assets/cert.pem', 'bank/assets/key.pem'), port=6000)
