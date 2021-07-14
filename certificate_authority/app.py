@@ -2,14 +2,20 @@
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.x509 import load_pem_x509_csr
 from flask import Flask, request
-import cert_issuer
 import requests
 import base64
+from flask_sqlalchemy import SQLAlchemy
+import database
+
 
 app = Flask(__name__)
 
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ca.db'
+database.db = SQLAlchemy(app)
+
 
 # This method should be removed
+
 @app.route('/sign', methods=['POST'])
 def sign():
     if not (request.content_type == 'application/octet-stream'
@@ -18,6 +24,7 @@ def sign():
 
     try:
         csr = load_pem_x509_csr(request.data)
+        import cert_issuer
         cert = cert_issuer.issue_certificate(csr)
         return cert.public_bytes(encoding=serialization.Encoding.PEM), 201
     except ValueError:
@@ -31,6 +38,7 @@ def certificate():
         return "Bad content type.", 400
 
     try:
+        import cert_issuer
         id, trust_address, secret_message = cert_issuer.define_sign_request(
             request.data)
     except ValueError as e:
@@ -56,6 +64,7 @@ def certificate():
 @app.route('/authenticate/<string:id>', methods=['POST'])
 def authenticate(id):
     message = request.json['message']
+    import cert_issuer
     cert_bytes = cert_issuer.verify_decrypted_message_and_issue(
         id, base64.b64decode(message))
 

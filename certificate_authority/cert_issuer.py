@@ -1,13 +1,10 @@
 import datetime
 from cryptography.x509 import *
 from cryptography.x509 import OID_COMMON_NAME
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import asymmetric, serialization
-from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
-from flask.globals import session
-from requests.api import request
-
+from database import db
 from models import *
 from os import urandom
 
@@ -28,19 +25,12 @@ def issue_certificate(csr: CertificateSigningRequest) -> Certificate:
             # Sign our certificate with our private key
             .sign(key, hashes.SHA256()))
 
-    # session = Session()
-
-    # session.add(
-    #     IssuedCertificate(
-    #         common_name=(cert.subject.get_attributes_for_oid(
-    #             OID_COMMON_NAME)[0].value),
-    #         cert=cert.public_bytes(serialization.Encoding.PEM)))
-    # session.commit()
-
-    issued_certificates[len(issued_certificates) + 1] = IssuedCertificate(
-        common_name=(cert.subject.get_attributes_for_oid(
-            OID_COMMON_NAME)[0].value),
-        cert=cert.public_bytes(serialization.Encoding.PEM))
+    db.session.add(
+        IssuedCertificate(
+            common_name=(cert.subject.get_attributes_for_oid(
+                OID_COMMON_NAME)[0].value),
+            cert=cert.public_bytes(serialization.Encoding.PEM)))
+    db.session.commit()
 
     return cert
 
@@ -53,10 +43,7 @@ def define_sign_request(csr_data: bytes):
     except IndexError:
         raise ValueError("Common name is not available.")
 
-    # session = Session()
-
-    # session.add(request)
-    # session.commit()
+    # session = scoped_session(Session)
 
     request = SignRequest(
         csr=csr.public_bytes(serialization.Encoding.PEM),
@@ -64,8 +51,8 @@ def define_sign_request(csr_data: bytes):
         expiration_time=datetime.datetime.utcnow() + datetime.timedelta(hours=1),
         trust_address=common_name)
 
-    request.id = str(uuid.uuid4())
-    sign_requests[request.id] = request
+    db.session.add(request)
+    db.session.commit()
 
     return (
         request.id,
@@ -81,10 +68,8 @@ def define_sign_request(csr_data: bytes):
 
 
 def verify_decrypted_message_and_issue(id: str, message: bytes) -> bytes:
-    # session = Session()
 
-    # request: SignRequest = session.query(SignRequest).get(id)
-    request = sign_requests[id]
+    request: SignRequest = db.session.query(SignRequest).get(id)
 
     assert request.expiration_time > datetime.datetime.utcnow()
     assert request.secret_message == message

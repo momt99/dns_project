@@ -1,11 +1,9 @@
 import uuid
 from sqlalchemy import *
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from database import db
 
-Base = declarative_base()
 
-class SignRequest(Base):
+class SignRequest(db.Model):
     __tablename__ = "sign_requests"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -15,18 +13,11 @@ class SignRequest(Base):
     trust_address = Column(String)
 
 
-class IssuedCertificate(Base):
+class IssuedCertificate(db.Model):
     __tablename__ = "certificates"
 
     id = Column(Integer, primary_key=True)
     common_name = Column(String)
     cert = Column(LargeBinary)
 
-# engine = create_engine('sqlite:///ca.db')
-
-# Base.metadata.create_all(engine)
-
-# Session = sessionmaker(bind=engine)
-
-sign_requests = dict()
-issued_certificates = dict()
+db.create_all()
