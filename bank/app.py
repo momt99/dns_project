@@ -1,15 +1,15 @@
 import os
 import random
 
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.exceptions import InvalidSignature
 import requests
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
 from flask import Flask, request
 
 from certificate_authority.csrgenerator import create_csr
-from utils.auth import verify_auth_header
+from certificate_authority.validator import verify_certificate
+from utils.auth import *
+from utils.signing import *
 
 app = Flask(__name__)
 
@@ -35,16 +35,18 @@ def create():
     try:
         data = request.json
         certificate = x509.load_pem_x509_certificate(data['certificate'])
+        header = data['header']
+        user_id = extract_user_id(header)
         public_key = certificate.public_key()
         try:
-            public_key.verify(data['signature'], data['ID'] + '|' + my_id,
-                              padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
-                              hashes.SHA256())
+            verify_auth_header(header, public_key, my_id)
         except InvalidSignature:
             return 'Signature Not Match', 450
+        if not verify_certificate(certificate):
+            return "Invalid Certificate", 451
         if accounts.__contains__(data[0]):
             return "Account already exists", 300
-        accounts[data[0]] = dict({'value': 0, 'public key': public_key})
+        accounts[user_id] = dict({'value': 0, 'public key': public_key})
         return "Account created successfully", 201
     except ValueError:
         return "Bad create account data", 400
