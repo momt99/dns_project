@@ -26,8 +26,8 @@ utils.auth.default_private_key = private_key
 
 logger.info("Certificate and public key generation is done!")
 
-
-USER_ID = "135702468"
+USER_ID_1 = "135702468"
+USER_ID_2 = "0987654321"
 
 
 def create_bank_account():
@@ -37,7 +37,7 @@ def create_bank_account():
     response = requests.post(
         f'{BANK_URL}/create',
         json=data,
-        headers={headers.AUTHORIZATION: create_auth_header(USER_ID, BANK_ID)},
+        headers={headers.AUTHORIZATION: create_auth_header(USER_ID_1, BANK_ID)},
         verify=False
     )
     response.raise_for_status()
@@ -52,10 +52,10 @@ def buy_item():
     }
 
     response = requests.post(
-        f'{SELLER_URL}/{USER_ID}/buy/2',
+        f'{SELLER_URL}/{USER_ID_1}/buy/2',
         json=data,
         verify=False,
-        headers={headers.AUTHORIZATION: create_auth_header(USER_ID, SELLER_ID)})
+        headers={headers.AUTHORIZATION: create_auth_header(USER_ID_1, SELLER_ID)})
     response.raise_for_status()
 
     data = response.json()
@@ -65,11 +65,10 @@ def buy_item():
     return payment_id, amount
 
 
-def pay_item(payment_id):
-
+def pay_item(payment_id, user_id=USER_ID_1):
     response = requests.post(
         f'{BANK_URL}/payment/{payment_id}/pay',
-        headers={headers.AUTHORIZATION: create_auth_header(USER_ID, BANK_ID)},
+        headers={headers.AUTHORIZATION: create_auth_header(user_id, BANK_ID)},
         verify=False
     )
     try:
@@ -79,6 +78,9 @@ def pay_item(payment_id):
     except HTTPError:
         if response.status_code == 460:
             logger.info('There was not a valid delegation for this payment.')
+            return False, from_base64(str(response.content, 'ascii'))
+        elif response.status_code == 450:
+            logger.info('It seems something is wrong in header.')
             return False, from_base64(str(response.content, 'ascii'))
         return False, None
 
@@ -92,7 +94,7 @@ def delegate(amount):
     data = {
         'certificate': to_base64(cert),
         # 'public_key': to_base64(public_key),
-        'user_id': USER_ID,
+        'user_id': USER_ID_1,
         'bank_id': BANK_ID,
         'policy': to_base64(policy),
         'signature': to_base64(sign(private_key, bytes(BANK_ID, encoding='ascii') + policy))
