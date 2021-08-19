@@ -7,7 +7,7 @@ The scenario that this project is designed for is a payment gateway using the ba
 Also, the delegation of currency exchange to a third-party agency from the user to the bank is possible in the case that there is not enough credit in the account, 
 so the bank can exchange cryptocurrencies to proceed with the payment.
 
-Additionally, the protocol comprosises of verification in different stages.
+Additionally, the protocol comprises of verification in different stages.
 
 All nodes are written using flask web framework to have a concise and clear interface.
 The cryptographic actions, such as asymmetric encryption, digital signatures, and certifcates, are done using [`cryptography`](https://pypi.org/project/cryptography/) library.
